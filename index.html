@@ -7,16 +7,16 @@
     <meta property="og:title" content="Video Preview">
     <meta property="og:description" content="Watch the video here.">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="https://githubassets.com">
+    <meta property="og:image" content="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png">
     <meta name="theme-color" content="#FF4757">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
-        iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: none; pointer-events: none; }
+        #player { position: fixed; inset: 0; width: 100%; height: 100%; border: none; pointer-events: none; }
         #unmute-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.2);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -36,29 +36,29 @@
             border: 2px solid #ff4757;
             box-shadow: 0 0 20px rgba(255, 71, 87, 0.5);
             pointer-events: none;
+            user-select: none;
         }
     </style>
 </head>
 <body>
 
-    <!-- Target Frame using explicit JS API toggles -->
     <div id="player"></div>
 
-    <!-- Transparent invisible overlay handler across the screen matrix -->
     <div id="unmute-overlay" onclick="triggerAudio()">
         <div class="speaker-box">
-            <span>Click for Teto</span>
+            <span>🔊 Click Anywhere to Unmute</span>
         </div>
     </div>
 
     <script>
-        // Dynamically invoke the formal YouTube IFrame Framework Asynchronously
         var tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         var firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         var player;
+        var hasInteracted = false;
+
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
                 height: '100%',
@@ -68,14 +68,16 @@
                     'autoplay': 1,
                     'mute': 1,
                     'loop': 1,
-                    'playlist': 'sqK-jh4TDXo',
+                    'playlist': 'yjBuru8lHLs',
                     'controls': 0,
                     'rel': 0,
                     'showinfo': 0,
-                    'modestbranding': 1
+                    'modestbranding': 1,
+                    'iv_load_policy': 3
                 },
                 events: {
-                    'onReady': onPlayerReady
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
                 }
             });
         }
@@ -84,14 +86,29 @@
             event.target.playVideo();
         }
 
-        // Bypasses local PC platform restrictions cleanly by marrying user event interaction directly to the core video element
-        function triggerAudio() {
-            if (player) {
-                player.unMute();
-                player.setVolume(100);
-                player.playVideo(); // Enforces persistent pipeline loop flow
+        function onPlayerStateChange(event) {
+            // If the browser tries to force pause the video after interaction, force play it back
+            if (event.data === YT.PlayerState.PAUSED && hasInteracted) {
+                player.playVideo();
             }
+        }
+
+        function triggerAudio() {
+            hasInteracted = true;
             document.getElementById('unmute-overlay').style.display = 'none';
+            
+            if (player && typeof player.unMute === 'function') {
+                try {
+                    player.unMute();
+                    player.setVolume(100);
+                    // Short safe delay to avoid synchronization/buffer freezing loop
+                    setTimeout(function() {
+                        player.playVideo();
+                    }, 150);
+                } catch(e) {
+                    console.log("API Error:", e);
+                }
+            }
         }
     </script>
 </body>
